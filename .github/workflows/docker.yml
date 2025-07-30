@@ -1,13 +1,8 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
-
-# Builds ultralytics/yolov5:latest images on DockerHub https://hub.docker.com/r/ultralytics/yolov5
-
 name: Publish Docker Images
-
 on:
   push:
-    branches: [master]
-  workflow_dispatch:
+    branches:
+      - main
 
 jobs:
   docker:
@@ -15,47 +10,59 @@ jobs:
     name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest
     steps:
+      - name: Start Energy Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
+        with:
+          json-output: true
+          task: start-measurement
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # copy full .git directory to access full git history in Docker images
-
+          fetch-depth: 0
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build and push arm64 image
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+      - continue-on-error: true
+        name: Build and push arm64 image
         uses: docker/build-push-action@v6
-        continue-on-error: true
         with:
           context: .
-          platforms: linux/arm64
           file: utils/docker/Dockerfile-arm64
+          platforms: linux/arm64
           push: true
           tags: ultralytics/yolov5:latest-arm64
-
-      - name: Build and push CPU image
+      - continue-on-error: true
+        name: Build and push CPU image
         uses: docker/build-push-action@v6
-        continue-on-error: true
         with:
           context: .
           file: utils/docker/Dockerfile-cpu
           push: true
           tags: ultralytics/yolov5:latest-cpu
-
-      - name: Build and push GPU image
+      - continue-on-error: true
+        name: Build and push GPU image
         uses: docker/build-push-action@v6
-        continue-on-error: true
         with:
           context: .
           file: utils/docker/Dockerfile
           push: true
           tags: ultralytics/yolov5:latest
+      - id: display-measurement
+        name: Display Energy Results
+        uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
+        with:
+          json-output: true
+          task: display-results
+      - name: Save Total Energy Consumption Data
+        run: echo '${{ steps.final-measurement.outputs.data-total-json }}' > total_energy_consumption.json
+      - name: Upload Energy Consumption Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: total-energy-consumption
+          path: total_energy_consumption.json

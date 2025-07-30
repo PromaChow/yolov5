@@ -1,82 +1,78 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
-
-# Continuous Integration (CI) GitHub Actions tests broken link checker using https://github.com/lycheeverse/lychee
-# Ignores the following status codes to reduce false positives:
-#   - 403(OpenVINO, 'forbidden')
-#   - 429(Instagram, 'too many requests')
-#   - 500(Zenodo, 'cached')
-#   - 502(Zenodo, 'bad gateway')
-#   - 999(LinkedIn, 'unknown status code')
-
 name: Check Broken links
-
 on:
-  workflow_dispatch:
-  schedule:
-    - cron: "0 0 * * *" # runs at 00:00 UTC every day
+  push:
+    branches:
+      - main
 
 jobs:
   Links:
     runs-on: ubuntu-latest
     steps:
+      - name: Start Energy Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
+        with:
+          json-output: true
+          task: start-measurement
       - uses: actions/checkout@v4
-
       - name: Download and install lychee
-        run: |
-          LYCHEE_URL=$(curl -s https://api.github.com/repos/lycheeverse/lychee/releases/latest | grep "browser_download_url" | grep "x86_64-unknown-linux-gnu.tar.gz" | cut -d '"' -f 4)
+        run: 'LYCHEE_URL=$(curl -s https://api.github.com/repos/lycheeverse/lychee/releases/latest
+          | grep "browser_download_url" | grep "x86_64-unknown-linux-gnu.tar.gz" |
+          cut -d ''"'' -f 4)
+
           curl -L $LYCHEE_URL | tar xz -C /usr/local/bin
 
+          '
+      - id: measurement-3
+        name: Record Measurement After Download and install lychee
+        uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
+        with:
+          json-output: true
+          label: Download and install lychee
+          task: get-measurement
       - name: Test Markdown and HTML links with retry
         uses: ultralytics/actions/retry@main
         with:
-          timeout_minutes: 5
-          retry_delay_seconds: 60
           retries: 2
-          run: |
-            lychee \
-            --scheme 'https' \
-            --timeout 60 \
-            --insecure \
-            --accept 100..=103,200..=299,401,403,429,500,502,999 \
-            --exclude-all-private \
-            --exclude 'https?://(www\.)?(linkedin\.com|twitter\.com|x\.com|instagram\.com|kaggle\.com|fonts\.gstatic\.com|url\.com)' \
-            --exclude-path '**/ci.yaml' \
-            --github-token ${{ secrets.GITHUB_TOKEN }} \
-            --header "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.6478.183 Safari/537.36" \
-            './**/*.md' \
-            './**/*.html' | tee -a $GITHUB_STEP_SUMMARY
-
-            # Raise error if broken links found
-            if ! grep -q "0 Errors" $GITHUB_STEP_SUMMARY; then
-              exit 1
-            fi
-
-      - name: Test Markdown, HTML, YAML, Python and Notebook links with retry
-        if: github.event_name == 'workflow_dispatch'
+          retry_delay_seconds: 60
+          run: "lychee \\\n--scheme 'https' \\\n--timeout 60 \\\n--insecure \\\n--accept\
+            \ 100..=103,200..=299,401,403,429,500,502,999 \\\n--exclude-all-private\
+            \ \\\n--exclude 'https?://(www\\.)?(linkedin\\.com|twitter\\.com|x\\.com|instagram\\\
+            .com|kaggle\\.com|fonts\\.gstatic\\.com|url\\.com)' \\\n--exclude-path\
+            \ '**/ci.yaml' \\\n--github-token ${{ secrets.GITHUB_TOKEN }} \\\n--header\
+            \ \"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36\
+            \ (KHTML, like Gecko) Chrome/126.0.6478.183 Safari/537.36\" \\\n'./**/*.md'\
+            \ \\\n'./**/*.html' | tee -a $GITHUB_STEP_SUMMARY\n\n# Raise error if\
+            \ broken links found\nif ! grep -q \"0 Errors\" $GITHUB_STEP_SUMMARY;\
+            \ then\n  exit 1\nfi\n"
+          timeout_minutes: 5
+      - if: github.event_name == 'workflow_dispatch'
+        name: Test Markdown, HTML, YAML, Python and Notebook links with retry
         uses: ultralytics/actions/retry@main
         with:
-          timeout_minutes: 5
-          retry_delay_seconds: 60
           retries: 2
-          run: |
-            lychee \
-            --scheme 'https' \
-            --timeout 60 \
-            --insecure \
-            --accept 100..=103,200..=299,429,999 \
-            --exclude-all-private \
-            --exclude 'https?://(www\.)?(linkedin\.com|twitter\.com|x\.com|instagram\.com|kaggle\.com|fonts\.gstatic\.com|url\.com)' \
-            --exclude-path '**/ci.yaml' \
-            --github-token ${{ secrets.GITHUB_TOKEN }} \
-            --header "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.6478.183 Safari/537.36" \
-            './**/*.md' \
-            './**/*.html' \
-            './**/*.yml' \
-            './**/*.yaml' \
-            './**/*.py' \
-            './**/*.ipynb' | tee -a $GITHUB_STEP_SUMMARY
-
-            # Raise error if broken links found
-            if ! grep -q "0 Errors" $GITHUB_STEP_SUMMARY; then
-              exit 1
-            fi
+          retry_delay_seconds: 60
+          run: "lychee \\\n--scheme 'https' \\\n--timeout 60 \\\n--insecure \\\n--accept\
+            \ 100..=103,200..=299,429,999 \\\n--exclude-all-private \\\n--exclude\
+            \ 'https?://(www\\.)?(linkedin\\.com|twitter\\.com|x\\.com|instagram\\\
+            .com|kaggle\\.com|fonts\\.gstatic\\.com|url\\.com)' \\\n--exclude-path\
+            \ '**/ci.yaml' \\\n--github-token ${{ secrets.GITHUB_TOKEN }} \\\n--header\
+            \ \"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36\
+            \ (KHTML, like Gecko) Chrome/126.0.6478.183 Safari/537.36\" \\\n'./**/*.md'\
+            \ \\\n'./**/*.html' \\\n'./**/*.yml' \\\n'./**/*.yaml' \\\n'./**/*.py'\
+            \ \\\n'./**/*.ipynb' | tee -a $GITHUB_STEP_SUMMARY\n\n# Raise error if\
+            \ broken links found\nif ! grep -q \"0 Errors\" $GITHUB_STEP_SUMMARY;\
+            \ then\n  exit 1\nfi\n"
+          timeout_minutes: 5
+      - id: display-measurement
+        name: Display Energy Results
+        uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
+        with:
+          json-output: true
+          task: display-results
+      - name: Save Total Energy Consumption Data
+        run: echo '${{ steps.final-measurement.outputs.data-total-json }}' > total_energy_consumption.json
+      - name: Upload Energy Consumption Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: total-energy-consumption
+          path: total_energy_consumption.json

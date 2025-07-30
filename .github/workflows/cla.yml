@@ -1,45 +1,51 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
-
-# Ultralytics Contributor License Agreement (CLA) action https://docs.ultralytics.com/help/CLA
-# This workflow automatically requests Pull Requests (PR) authors to sign the Ultralytics CLA before PRs can be merged
-
 name: CLA Assistant
 on:
-  issue_comment:
-    types:
-      - created
-  pull_request_target:
-    types:
-      - reopened
-      - opened
-      - synchronize
-
-permissions:
-  actions: write
-  contents: write
-  pull-requests: write
-  statuses: write
+  push:
+    branches:
+      - main
 
 jobs:
   CLA:
     if: github.repository == 'ultralytics/yolov5'
     runs-on: ubuntu-latest
     steps:
-      - name: CLA Assistant
-        if: (github.event.comment.body == 'recheck' || github.event.comment.body == 'I have read the CLA Document and I sign the CLA') || github.event_name == 'pull_request_target'
-        uses: contributor-assistant/github-action@v2.6.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Must be repository secret PAT
-          PERSONAL_ACCESS_TOKEN: ${{ secrets._GITHUB_TOKEN }}
+      - name: Start Energy Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
         with:
-          path-to-signatures: "signatures/version1/cla.json"
-          path-to-document: "https://docs.ultralytics.com/help/CLA" # CLA document
-          # Branch must not be protected
-          branch: "cla-signatures"
+          json-output: true
+          task: start-measurement
+      - env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PERSONAL_ACCESS_TOKEN: ${{ secrets._GITHUB_TOKEN }}
+        if: (github.event.comment.body == 'recheck' || github.event.comment.body ==
+          'I have read the CLA Document and I sign the CLA') || github.event_name
+          == 'pull_request_target'
+        name: CLA Assistant
+        uses: contributor-assistant/github-action@v2.6.1
+        with:
           allowlist: dependabot[bot],github-actions,[pre-commit*,pre-commit*,bot*
-
+          branch: cla-signatures
+          custom-allsigned-prcomment: "All Contributors have signed the CLA. \u2705"
+          custom-pr-sign-comment: I have read the CLA Document and I sign the CLA
+          path-to-document: https://docs.ultralytics.com/help/CLA
+          path-to-signatures: signatures/version1/cla.json
           remote-organization-name: ultralytics
           remote-repository-name: cla
-          custom-pr-sign-comment: "I have read the CLA Document and I sign the CLA"
-          custom-allsigned-prcomment: All Contributors have signed the CLA. ✅
+      - id: display-measurement
+        name: Display Energy Results
+        uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
+        with:
+          json-output: true
+          task: display-results
+      - name: Save Total Energy Consumption Data
+        run: echo '${{ steps.final-measurement.outputs.data-total-json }}' > total_energy_consumption.json
+      - name: Upload Energy Consumption Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: total-energy-consumption
+          path: total_energy_consumption.json
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+  statuses: write

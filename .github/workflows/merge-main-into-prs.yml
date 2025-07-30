@@ -1,72 +1,85 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
-
-# Automatically merges repository 'main' branch into all open PRs to keep them up-to-date
-# Action runs on updates to main branch so when one PR merges to main all others update
-
 name: Merge main into PRs
-
 on:
-  workflow_dispatch:
-  # push:
-  #   branches:
-  #     - ${{ github.event.repository.default_branch }}
+  push:
+    branches:
+      - main
 
 jobs:
   Merge:
     if: github.repository == 'ultralytics/yolov5'
     runs-on: ubuntu-latest
     steps:
+      - name: Start Energy Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
+        with:
+          json-output: true
+          task: start-measurement
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
-          cache: "pip"
+          cache: pip
+          python-version: 3.x
       - name: Install requirements
-        run: |
-          pip install pygithub
-      - name: Merge default branch into PRs
-        shell: python
-        run: |
-          from github import Github
-          import os
+        run: 'pip install pygithub
 
-          g = Github(os.getenv('GITHUB_TOKEN'))
-          repo = g.get_repo(os.getenv('GITHUB_REPOSITORY'))
-
-          # Fetch the default branch name
-          default_branch_name = repo.default_branch
-          default_branch = repo.get_branch(default_branch_name)
-
-          for pr in repo.get_pulls(state='open', sort='created'):
-              try:
-                  # Get full names for repositories and branches
-                  base_repo_name = repo.full_name
-                  head_repo_name = pr.head.repo.full_name
-                  base_branch_name = pr.base.ref
-                  head_branch_name = pr.head.ref
-
-                  # Check if PR is behind the default branch
-                  comparison = repo.compare(default_branch.commit.sha, pr.head.sha)
-                  
-                  if comparison.behind_by > 0:
-                      print(f"⚠️ PR #{pr.number} ({head_repo_name}:{head_branch_name} -> {base_repo_name}:{base_branch_name}) is behind {default_branch_name} by {comparison.behind_by} commit(s).")
-                      
-                      # Attempt to update the branch
-                      try:
-                          success = pr.update_branch()
-                          assert success, "Branch update failed"
-                          print(f"✅ Successfully merged '{default_branch_name}' into PR #{pr.number} ({head_repo_name}:{head_branch_name} -> {base_repo_name}:{base_branch_name}).")
-                      except Exception as update_error:
-                          print(f"❌ Could not update PR #{pr.number} ({head_repo_name}:{head_branch_name} -> {base_repo_name}:{base_branch_name}): {update_error}")
-                          print("   This might be due to branch protection rules or insufficient permissions.")
-                  else:
-                      print(f"✅ PR #{pr.number} ({head_repo_name}:{head_branch_name} -> {base_repo_name}:{base_branch_name}) is up to date with {default_branch_name}.")
-              except Exception as e:
-                  print(f"❌ Could not process PR #{pr.number}: {e}")
-
-        env:
-          GITHUB_TOKEN: ${{ secrets._GITHUB_TOKEN }}
+          '
+      - id: measurement-4
+        name: Record Measurement After Install requirements
+        uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
+        with:
+          json-output: true
+          label: Install requirements
+          task: get-measurement
+      - env:
           GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets._GITHUB_TOKEN }}
+        name: Merge default branch into PRs
+        run: "from github import Github\nimport os\n\ng = Github(os.getenv('GITHUB_TOKEN'))\n\
+          repo = g.get_repo(os.getenv('GITHUB_REPOSITORY'))\n\n# Fetch the default\
+          \ branch name\ndefault_branch_name = repo.default_branch\ndefault_branch\
+          \ = repo.get_branch(default_branch_name)\n\nfor pr in repo.get_pulls(state='open',\
+          \ sort='created'):\n    try:\n        # Get full names for repositories\
+          \ and branches\n        base_repo_name = repo.full_name\n        head_repo_name\
+          \ = pr.head.repo.full_name\n        base_branch_name = pr.base.ref\n   \
+          \     head_branch_name = pr.head.ref\n\n        # Check if PR is behind\
+          \ the default branch\n        comparison = repo.compare(default_branch.commit.sha,\
+          \ pr.head.sha)\n        \n        if comparison.behind_by > 0:\n       \
+          \     print(f\"\u26A0\uFE0F PR #{pr.number} ({head_repo_name}:{head_branch_name}\
+          \ -> {base_repo_name}:{base_branch_name}) is behind {default_branch_name}\
+          \ by {comparison.behind_by} commit(s).\")\n            \n            # Attempt\
+          \ to update the branch\n            try:\n                success = pr.update_branch()\n\
+          \                assert success, \"Branch update failed\"\n            \
+          \    print(f\"\u2705 Successfully merged '{default_branch_name}' into PR\
+          \ #{pr.number} ({head_repo_name}:{head_branch_name} -> {base_repo_name}:{base_branch_name}).\"\
+          )\n            except Exception as update_error:\n                print(f\"\
+          \u274C Could not update PR #{pr.number} ({head_repo_name}:{head_branch_name}\
+          \ -> {base_repo_name}:{base_branch_name}): {update_error}\")\n         \
+          \       print(\"   This might be due to branch protection rules or insufficient\
+          \ permissions.\")\n        else:\n            print(f\"\u2705 PR #{pr.number}\
+          \ ({head_repo_name}:{head_branch_name} -> {base_repo_name}:{base_branch_name})\
+          \ is up to date with {default_branch_name}.\")\n    except Exception as\
+          \ e:\n        print(f\"\u274C Could not process PR #{pr.number}: {e}\")\n"
+        shell: python
+      - id: measurement-6
+        name: Record Measurement After Merge default branch into PRs
+        uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
+        with:
+          json-output: true
+          label: Merge default branch into PRs
+          task: get-measurement
+      - id: display-measurement
+        name: Display Energy Results
+        uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
+        with:
+          json-output: true
+          task: display-results
+      - name: Save Total Energy Consumption Data
+        run: echo '${{ steps.final-measurement.outputs.data-total-json }}' > total_energy_consumption.json
+      - name: Upload Energy Consumption Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: total-energy-consumption
+          path: total_energy_consumption.json

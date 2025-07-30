@@ -1,47 +1,60 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
-
 name: Close stale issues
 on:
-  schedule:
-    - cron: "0 0 * * *" # Runs at 00:00 UTC every day
+  push:
+    branches:
+      - main
 
 jobs:
   stale:
     runs-on: ubuntu-latest
     steps:
+      - name: Start Energy Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
+        with:
+          json-output: true
+          task: start-measurement
       - uses: actions/stale@v9
         with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
-          stale-issue-message: |
-            👋 Hello there! We wanted to give you a friendly reminder that this issue has not had any recent activity and may be closed soon, but don't worry - you can always reopen it if needed. If you still have any questions or concerns, please feel free to let us know how we can help.
-
-            For additional resources and information, please see the links below:
-
-            - **Docs**: https://docs.ultralytics.com
-            - **HUB**: https://hub.ultralytics.com
-            - **Community**: https://community.ultralytics.com
-
-            Feel free to inform us of any other **issues** you discover or **feature requests** that come to mind in the future. Pull Requests (PRs) are also always welcomed!
-
-            Thank you for your contributions to YOLO 🚀 and Vision AI ⭐
-
-          stale-pr-message: |
-            👋 Hello there! We wanted to let you know that we've decided to close this pull request due to inactivity. We appreciate the effort you put into contributing to our project, but unfortunately, not all contributions are suitable or aligned with our product roadmap.
-
-            We hope you understand our decision, and please don't let it discourage you from contributing to open source projects in the future. We value all of our community members and their contributions, and we encourage you to keep exploring new projects and ways to get involved.
-
-            For additional resources and information, please see the links below:
-
-            - **Docs**: https://docs.ultralytics.com
-            - **HUB**: https://hub.ultralytics.com
-            - **Community**: https://community.ultralytics.com
-
-            Thank you for your contributions to YOLO 🚀 and Vision AI ⭐
-
-          days-before-issue-stale: 30
           days-before-issue-close: 10
-          days-before-pr-stale: 90
+          days-before-issue-stale: 30
           days-before-pr-close: 30
-          exempt-issue-labels: "documentation,tutorial,TODO"
-          operations-per-run: 300 # The maximum number of operations per run, used to control rate limiting.
+          days-before-pr-stale: 90
+          exempt-issue-labels: documentation,tutorial,TODO
+          operations-per-run: 300
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          stale-issue-message: "\U0001F44B Hello there! We wanted to give you a friendly\
+            \ reminder that this issue has not had any recent activity and may be\
+            \ closed soon, but don't worry - you can always reopen it if needed. If\
+            \ you still have any questions or concerns, please feel free to let us\
+            \ know how we can help.\n\nFor additional resources and information, please\
+            \ see the links below:\n\n- **Docs**: https://docs.ultralytics.com\n-\
+            \ **HUB**: https://hub.ultralytics.com\n- **Community**: https://community.ultralytics.com\n\
+            \nFeel free to inform us of any other **issues** you discover or **feature\
+            \ requests** that come to mind in the future. Pull Requests (PRs) are\
+            \ also always welcomed!\n\nThank you for your contributions to YOLO \U0001F680\
+            \ and Vision AI \u2B50\n"
+          stale-pr-message: "\U0001F44B Hello there! We wanted to let you know that\
+            \ we've decided to close this pull request due to inactivity. We appreciate\
+            \ the effort you put into contributing to our project, but unfortunately,\
+            \ not all contributions are suitable or aligned with our product roadmap.\n\
+            \nWe hope you understand our decision, and please don't let it discourage\
+            \ you from contributing to open source projects in the future. We value\
+            \ all of our community members and their contributions, and we encourage\
+            \ you to keep exploring new projects and ways to get involved.\n\nFor\
+            \ additional resources and information, please see the links below:\n\n\
+            - **Docs**: https://docs.ultralytics.com\n- **HUB**: https://hub.ultralytics.com\n\
+            - **Community**: https://community.ultralytics.com\n\nThank you for your\
+            \ contributions to YOLO \U0001F680 and Vision AI \u2B50\n"
+      - id: display-measurement
+        name: Display Energy Results
+        uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
+        with:
+          json-output: true
+          task: display-results
+      - name: Save Total Energy Consumption Data
+        run: echo '${{ steps.final-measurement.outputs.data-total-json }}' > total_energy_consumption.json
+      - name: Upload Energy Consumption Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: total-energy-consumption
+          path: total_energy_consumption.json
